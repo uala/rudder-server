@@ -4,6 +4,8 @@ import (
 	"container/list"
 	"encoding/json"
 	"fmt"
+	"github.com/rudderlabs/rudder-server/router/drain"
+	"github.com/tidwall/gjson"
 	"math"
 	"math/rand"
 	"sort"
@@ -76,6 +78,7 @@ type HandleT struct {
 	backendConfigInitialized               chan bool
 	maxFailedCountForJob                   int
 	retryTimeWindow                        time.Duration
+	drainJobHandler                        drain.DrainI
 }
 
 type jobResponseT struct {
@@ -992,11 +995,26 @@ func (rt *HandleT) generatorLoop() {
 		}
 
 		var statusList []*jobsdb.JobStatusT
+		var drainList []*jobsdb.JobStatusT
+
 		var toProcess []workerJobT
 
 		rt.throttledUserMap = make(map[string]struct{})
 		//Identify jobs which can be processed
 		for _, job := range combinedList {
+			if rt.drainJobHandler.CanJobBeDrained(job.JobID, destIDExtractor([]byte(job.Parameters))) {
+				status := jobsdb.JobStatusT{
+					JobID:         job.JobID,
+					AttemptNum:    job.LastJobStatus.AttemptNum,
+					JobState:      jobsdb.Aborted.State,
+					ExecTime:      time.Now(),
+					RetryTime:     time.Now(),
+					ErrorCode:     "",
+					ErrorResponse: []byte(`{}`),
+				}
+				drainList = append(drainList, &status)
+				continue
+			}
 			w := rt.findWorker(job)
 			if w != nil {
 				status := jobsdb.JobStatusT{
@@ -1016,6 +1034,7 @@ func (rt *HandleT) generatorLoop() {
 
 		//Mark the jobs as executing
 		rt.jobsDB.UpdateJobStatus(statusList, []string{rt.destName}, nil)
+		rt.jobsDB.UpdateJobStatus(drainList, []string{rt.destName}, nil)
 
 		//Send the jobs to the jobQ
 		for _, wrkJob := range toProcess {
@@ -1031,6 +1050,12 @@ func (rt *HandleT) generatorLoop() {
 		countStat.Count(len(combinedList))
 		generatorStat.End()
 		time.Sleep(fixedLoopSleep) // adding sleep here to reduce cpu load on postgres when we have less rps
+	}
+}
+
+func destIDExtractor(body []byte) func()string{
+	return func()string{
+		return gjson.GetBytes(body, "destination_id").String()
 	}
 }
 
@@ -1069,7 +1094,7 @@ func (rt *HandleT) Setup(jobsDB *jobsdb.HandleT, destName string) {
 	rt.noOfWorkers = getRouterConfigInt("noOfWorkers", destName, 64)
 	rt.maxFailedCountForJob = getRouterConfigInt("maxFailedCountForJob", destName, 3)
 	rt.retryTimeWindow = getRouterConfigDuration("retryTimeWindowInMins", destName, time.Duration(180)) * time.Minute
-
+	rt.drainJobHandler = drain.Setup(rt.jobsDB)
 	rt.enableBatching = getRouterConfigBool("enableBatching", rt.destName, false)
 
 	rt.allowAbortedUserJobsCountForProcessing = getRouterConfigInt("allowAbortedUserJobsCountForProcessing", destName, 1)
