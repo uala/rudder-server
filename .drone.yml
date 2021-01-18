@@ -5,7 +5,7 @@ type: kubernetes
 
 steps:
   - name: make-build
-    image: golang:1.13-alpine
+    image: golang:1.13
     pull: if-not-exists
     commands:
       - VERSION=$(head -1 .version)
@@ -49,6 +49,6 @@ get:
   name: dockerconfigjson
 ---
 kind: signature
-hmac: 2e475c7d3316360f6f6dc1bae393cbee08a0e1454dc4a81b615944ed82b63b86
+hmac: 865d096ca29127a1f1f14c2326c1e3fbc73e9072e90f6032b389f5068e90d321
 
 ...
