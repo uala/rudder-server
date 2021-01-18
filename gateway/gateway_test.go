@@ -559,12 +559,17 @@ func expectBatch(expectations []*RequestExpectation) {
 func allHandlers(gateway *HandleT) map[string]http.HandlerFunc {
 	return map[string]http.HandlerFunc{
 		"alias":    gateway.webAliasHandler,
+		"a":        gateway.webAliasHandler,
 		"batch":    gateway.webBatchHandler,
 		"group":    gateway.webGroupHandler,
+		"g":        gateway.webGroupHandler,
 		"identify": gateway.webIdentifyHandler,
+		"i":        gateway.webIdentifyHandler,
 		"page":     gateway.webPageHandler,
+		"p":        gateway.webPageHandler,
 		"screen":   gateway.webScreenHandler,
 		"track":    gateway.webTrackHandler,
+		"t":        gateway.webTrackHandler,
 	}
 }
 
