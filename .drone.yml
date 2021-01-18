@@ -18,7 +18,7 @@ steps:
     image: plugins/docker
     settings:
       repo: ${DRONE_REPO,,}
-      dockerfile: build/Dockerfile
+      dockerfile: build/Dockerfile-aws
       tags:
         - ${DRONE_SOURCE_BRANCH/\//-}
         - ${DRONE_SOURCE_BRANCH/\//-}-${DRONE_COMMIT_SHA:0:8}
@@ -49,6 +49,6 @@ get:
   name: dockerconfigjson
 ---
 kind: signature
-hmac: 865d096ca29127a1f1f14c2326c1e3fbc73e9072e90f6032b389f5068e90d321
+hmac: 37392abd02aecd7e408c4c3a8d937635e30a798afdaee658376a8dc656d3f722
 
 ...
