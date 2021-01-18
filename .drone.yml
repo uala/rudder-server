@@ -6,12 +6,13 @@ type: kubernetes
 steps:
   - name: make-build
     image: golang:1.13-alpine
-    environment:
-      - GO111MODULE=on
+    pull: if-not-exists
     commands:
       - VERSION=$(head -1 .version)
       - DATE=$(date "+%F,%T")
       - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 LDFLAGS="-s -w -X main.version=$VERSION -X main.commit=$DRONE_COMMIT_SHA -X main.buildDate=$DATE -X main.builtBy=drone-$DRONE_BUILD_NUMBER " make build
+    environment:
+      GO111MODULE: on
 
   - name: build-docker-image-branch
     image: plugins/docker
@@ -48,6 +49,6 @@ get:
   name: dockerconfigjson
 ---
 kind: signature
-hmac: 17a7d04f106a892ff878f7d0626f8c16962c47d1dad4d3ad25614d6cad795a12
+hmac: 2e475c7d3316360f6f6dc1bae393cbee08a0e1454dc4a81b615944ed82b63b86
 
 ...
