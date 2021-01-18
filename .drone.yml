@@ -1,0 +1,43 @@
+---
+kind: pipeline
+name: build-docker-image
+type: kubernetes
+
+steps:
+  - name: build-docker-image-branch
+    image: plugins/docker
+    settings:
+      repo: ${DRONE_REPO,,}
+      tags:
+        - ${DRONE_SOURCE_BRANCH/\//-}
+        - ${DRONE_SOURCE_BRANCH/\//-}-${DRONE_COMMIT_SHA:0:8}
+      cache_from:
+        - ${DRONE_REPO,,}:${DRONE_SOURCE_BRANCH/\//-}
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+
+---
+kind: secret
+name: DOCKER_USERNAME
+get:
+  path: docker-credentials
+  name: username
+---
+kind: secret
+name: DOCKER_PASSWORD
+get:
+  path: docker-credentials
+  name: password
+---
+kind: secret
+name: dockerconfigjson
+get:
+  path: docker-credentials
+  name: dockerconfigjson
+---
+kind: signature
+hmac: ebc02b10e3484226719129a8ac005e762f6f531f834169e4f5057ff803241ed3
+
+...
